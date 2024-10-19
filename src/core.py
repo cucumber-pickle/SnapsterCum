@@ -72,8 +72,8 @@ class SnapsterBot:
                             log(hju + f"Total points: {pth}{points_count}")
                             log(hju + f"Current league: {pth}{league}")
                         else:
-                            self.broken_accounts.append(acc+1)
                             log(mrh + f"Failed to fetch user data.")
+                            return "Failed"
 
                     else:
                         log(mrh + f"Error: {response.status}")
@@ -144,6 +144,7 @@ class SnapsterBot:
                                     return
                         else:
                             log(mrh + f"Failed to get league information.")
+                            return "Failed"
                     else:
                         log(mrh + f"Error fetching leagues: {response.status}")
             except Exception as e:
@@ -351,13 +352,13 @@ class SnapsterBot:
                     
                     connector = aiohttp.TCPConnector(ssl=False)
                     async with aiohttp.ClientSession(connector=connector) as session:
-                        log(hju + f"Account {account_number + 1}/{total}")
-                        log(hju + f"Using proxy: {host}")
+                        log(hju + f"Account {pth}{account_number + 1}/{total}")
+                        log(hju + f"Using proxy: {pth}{host}")
                         log(htm + "~" * 38)
                         await self.extract_user_id()
-                        await self.get_user_data(session, proxy, account_number)
+                        get_user_data = await self.get_user_data(session, proxy, account_number)
                         await self.claim_daily_bonus(session, proxy)
-                        await self.claim_league_bonus(session, proxy)
+                        claim_league_bonus = await self.claim_league_bonus(session, proxy)
                         await self.claim_mining_bonus(session, proxy)
 
                         if tasks_enabled:
@@ -367,8 +368,9 @@ class SnapsterBot:
                         
                         await self.claim_referral_points(session, proxy)
                         log_line()
-                        
                         account_number += 1
+                        if get_user_data =="Failed" and claim_league_bonus == "Failed":
+                            self.broken_accounts.append(account_number)
                         await countdown_timer(delay)
                 log(f"total_broken: {len(self.broken_accounts)} / {total} broken_accounts:{self.broken_accounts} \n")
                 open("error.txt", "a", encoding="utf-8").write(
