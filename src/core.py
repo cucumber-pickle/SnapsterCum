@@ -51,7 +51,7 @@ class SnapsterBot:
             log_error(f"{e}")
             return None
         
-    async def get_user_data(self, session, proxy):
+    async def get_user_data(self, session, proxy, acc):
         if not self.user_id:
             log(mrh + f"User id not found.")
             return
@@ -72,7 +72,9 @@ class SnapsterBot:
                             log(hju + f"Total points: {pth}{points_count}")
                             log(hju + f"Current league: {pth}{league}")
                         else:
+                            self.broken_accounts.append(acc+1)
                             log(mrh + f"Failed to fetch user data.")
+
                     else:
                         log(mrh + f"Error: {response.status}")
             except Exception as e:
@@ -333,11 +335,12 @@ class SnapsterBot:
             log(f"File {self.query_file} not found!")
             return
 
-        account_number = 0
         total = len(query_ids)
 
         while True:
             try:
+                account_number = 0
+                self.broken_accounts = []
                 for query_id in query_ids:
                     self.query_id = query_id
                     proxy = await self.get_proxy_for_account(account_number)
@@ -352,7 +355,7 @@ class SnapsterBot:
                         log(hju + f"Using proxy: {host}")
                         log(htm + "~" * 38)
                         await self.extract_user_id()
-                        await self.get_user_data(session, proxy)
+                        await self.get_user_data(session, proxy, account_number)
                         await self.claim_daily_bonus(session, proxy)
                         await self.claim_league_bonus(session, proxy)
                         await self.claim_mining_bonus(session, proxy)
@@ -367,7 +370,10 @@ class SnapsterBot:
                         
                         account_number += 1
                         await countdown_timer(delay)
-
+                log(f"total_broken: {len(self.broken_accounts)} / {total} broken_accounts:{self.broken_accounts} \n")
+                open("error.txt", "a", encoding="utf-8").write(
+                    f"total_broken: {len(self.broken_accounts)} / {total} broken_accounts:{self.broken_accounts} \n"
+                )
                 await countdown_timer(loop_duration)
             except Exception as e:
                 log(kng + f"Error: {e}")
