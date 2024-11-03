@@ -86,7 +86,7 @@ class SnapsterBot:
             log(mrh + f"User id not found.")
             return
         
-        url_daily_bonus = "https://prod.snapster.bot/api/dailyQuest/startDailyBonusQuest"
+        url_daily_bonus = "https://prod.snapster.bot/api/dailyQuest/claimDailyQuestBonus"
         payload = {
             "telegramId": str(self.user_id)
         }
@@ -269,6 +269,29 @@ class SnapsterBot:
             log_error(f"{str(e)}")
             return False
 
+    async def connect_wallets(self, session, proxy, wallet):
+        url = "https://prod.snapster.bot/api/user/connectWallet"
+        payload = {
+            "telegramId": str(self.user_id),
+            "walletAddress": wallet
+        }
+
+        try:
+            async with session.post(url, json=payload, headers=self.headers, proxy=proxy) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    print(data)
+                    if data.get('result'):
+                        log(hju+ f'{data.get('message')}')
+                    else:
+                        return False
+                else:
+                    return False
+        except Exception as e:
+            log(mrh +f"an error occurred check http.log")
+            log_error(f"{str(e)}")
+            return False
+
     async def claim_quest_bonus(self, session, proxy, quest_id):
         url = "https://prod.snapster.bot/api/quest/claimQuestBonus"
         payload = {
@@ -325,8 +348,12 @@ class SnapsterBot:
 
     async def run(self):
         tasks_enabled = config.get("auto_complete_tasks", False)
+        # connect_wallets = config.get("connect_wallet", False)
         delay = config.get("account_delay", 5)
         loop_duration = config.get("loop_countdown", 3800)
+
+        # with open('wallets.txt', 'r') as file:
+        #     wallets = [line.strip() for line in file if line.strip()]
 
         query_ids = []
         try:
@@ -360,6 +387,22 @@ class SnapsterBot:
                         await self.claim_daily_bonus(session, proxy)
                         claim_league_bonus = await self.claim_league_bonus(session, proxy)
                         await self.claim_mining_bonus(session, proxy)
+
+                        # if connect_wallets:
+                        #     if len(wallets) >= len(query_ids):
+                        #         wallet = wallets[account_number - 1]
+                        #         log(
+                        #             f"{Fore.GREEN + Style.BRIGHT}Connect wallet:{Style.RESET_ALL}"
+                        #             f"{Fore.WHITE + Style.BRIGHT}{wallet}{Style.RESET_ALL}")
+                        #     else:
+                        #         log(
+                        #             Fore.RED + "The number of wallets is less than the number of accounts. The connection of wallets is disabled!")
+                        #         wallet = None
+                        # else:
+                        #     wallet = None
+                        #
+                        # if wallet:
+                        #     await self.connect_wallets(session, proxy, wallet)
 
                         if tasks_enabled:
                             await self.get_tasks(session, proxy)
